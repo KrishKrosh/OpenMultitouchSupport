@@ -75,6 +75,7 @@ OSStatus MTDeviceGetSensorDimensions(MTDeviceRef, int*, int*);
 OSStatus MTDeviceGetFamilyID(MTDeviceRef, int*);
 OSStatus MTDeviceGetDeviceID(MTDeviceRef, uint64_t*) __attribute__ ((weak_import));
 OSStatus MTDeviceGetDriverType(MTDeviceRef, int*);
+OSStatus MTDeviceGetTransportMethod(MTDeviceRef, int*) __attribute__ ((weak_import));
 OSStatus MTDeviceGetGUID(MTDeviceRef, uuid_t*);
 void MTPrintImageRegionDescriptors(MTDeviceRef);
 
