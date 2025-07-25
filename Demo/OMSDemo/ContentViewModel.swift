@@ -26,7 +26,6 @@ final class ContentViewModel: ObservableObject {
         task = Task { [weak self, manager] in
             for await touchData in manager.touchDataStream {
                 await MainActor.run {
-                    print(touchData)
                     self?.touchData = touchData
                 }
             }
