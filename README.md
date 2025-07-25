@@ -84,3 +84,44 @@ struct OMSTouchData: Sendable {
     var timestamp: String
 }
 ```
+
+## Development Workflow
+
+This package uses a hybrid approach with both Swift wrapper code and binary XCFramework distribution. Here's how to update the library:
+
+### Updating Swift Wrapper Code Only
+
+When you need to modify the Swift API layer (files in `Sources/OpenMultitouchSupport/`):
+
+1. **Edit** the Swift files in `Sources/OpenMultitouchSupport/`
+2. **Commit and push** changes to GitHub
+3. **In consuming projects**: Update packages in Xcode (File → Packages → Update to Latest Package Versions)
+
+Since consuming projects typically use `branch: main`, they will automatically get the latest Swift wrapper changes.
+
+### Updating the Binary XCFramework
+
+When you need to modify the underlying Framework code:
+
+1. **Update** the Framework code in `Framework/OpenMultitouchSupportXCF/`
+2. **Build new XCFramework**: 
+   ```bash
+   ./build_framework.sh
+   ```
+3. **Create new release**:
+   ```bash
+   ./release.sh 1.0.x  # Replace x with next version number
+   ```
+4. **Update Package.swift** to point to the new release URL and checksum
+5. **Commit and push** the Package.swift changes
+6. **In consuming projects**: Update packages in Xcode
+
+### Release Script
+
+The `release.sh` script automates the binary release process:
+- Builds the XCFramework
+- Creates a GitHub release with the binary artifact
+- Updates Package.swift with the correct URL and checksum
+- Commits the changes
+
+This workflow allows rapid iteration on the Swift API while maintaining stable binary releases for the underlying multitouch framework.
