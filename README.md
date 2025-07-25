@@ -1,5 +1,14 @@
 # OpenMultitouchSupport
 
+**This is a fork of [Kyome22/OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) with some added features.**
+
+It adds support for:
+- Listing all available devices
+- Selecting a device
+- Getting device name
+
+---
+
 This enables you easily to observe global multitouch events on the trackpad (only default device).  
 I created this library to make MultitouchSupport.framework (Private Framework) easy to use.
 
