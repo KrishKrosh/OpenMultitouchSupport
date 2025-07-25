@@ -13,10 +13,21 @@
 #import <OpenMultitouchSupportXCF/OpenMTListener.h>
 #import <OpenMultitouchSupportXCF/OpenMTEvent.h>
 
+@interface OpenMTDeviceInfo: NSObject
+@property (nonatomic, readonly) NSString *deviceName;
+@property (nonatomic, readonly) NSString *deviceID;
+@property (nonatomic, readonly) BOOL isBuiltIn;
+@property (nonatomic, readonly) void *deviceRef;
+@end
+
 @interface OpenMTManager: NSObject
 
 + (BOOL)systemSupportsMultitouch;
 + (OpenMTManager *)sharedManager;
+
+- (NSArray<OpenMTDeviceInfo *> *)availableDevices;
+- (BOOL)selectDevice:(OpenMTDeviceInfo *)deviceInfo;
+- (OpenMTDeviceInfo *)currentDevice;
 
 - (OpenMTListener *)addListenerWithTarget:(id)target selector:(SEL)selector;
 - (void)removeListener:(OpenMTListener *)listener;

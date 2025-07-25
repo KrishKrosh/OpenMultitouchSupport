@@ -14,10 +14,38 @@
 #import "OpenMTEventInternal.h"
 #import "OpenMTInternal.h"
 
+@implementation OpenMTDeviceInfo
+
+- (instancetype)initWithDeviceRef:(MTDeviceRef)deviceRef {
+    if (self = [super init]) {
+        _deviceRef = deviceRef;
+        
+        // Get device ID
+        uint64_t deviceID;
+        OSStatus err = MTDeviceGetDeviceID(deviceRef, &deviceID);
+        if (!err) {
+            _deviceID = [NSString stringWithFormat:@"%llu", deviceID];
+        } else {
+            _deviceID = @"Unknown";
+        }
+        
+        // Determine if built-in
+        _isBuiltIn = MTDeviceIsBuiltIn ? MTDeviceIsBuiltIn(deviceRef) : YES;
+        
+        // Set device name based on type
+        _deviceName = _isBuiltIn ? @"MacBook Trackpad" : @"Magic Trackpad";
+    }
+    return self;
+}
+
+@end
+
 @interface OpenMTManager()
 
 @property (strong, readwrite) NSMutableArray *listeners;
 @property (assign, readwrite) MTDeviceRef device;
+@property (strong, readwrite) NSArray<OpenMTDeviceInfo *> *availableDeviceInfos;
+@property (strong, readwrite) OpenMTDeviceInfo *currentDeviceInfo;
 
 @end
 
@@ -39,6 +67,7 @@
 - (instancetype)init {
     if (self = [super init]) {
         self.listeners = NSMutableArray.new;
+        [self enumerateDevices];
         
         [NSWorkspace.sharedWorkspace.notificationCenter addObserver:self selector:@selector(willSleep:) name:NSWorkspaceWillSleepNotification object:nil];
         [NSWorkspace.sharedWorkspace.notificationCenter addObserver:self selector:@selector(didWakeUp:) name:NSWorkspaceDidWakeNotification object:nil];
@@ -46,9 +75,53 @@
     return self;
 }
 
+- (void)dealloc {
+    // Release all retained device references
+    for (OpenMTDeviceInfo *deviceInfo in self.availableDeviceInfos) {
+        if (deviceInfo.deviceRef) {
+            CFRelease(deviceInfo.deviceRef);
+        }
+    }
+}
+
+- (void)enumerateDevices {
+    NSMutableArray<OpenMTDeviceInfo *> *devices = [NSMutableArray array];
+    
+    if (MTDeviceCreateList) {
+        CFArrayRef deviceList = MTDeviceCreateList();
+        if (deviceList) {
+            CFIndex count = CFArrayGetCount(deviceList);
+            for (CFIndex i = 0; i < count; i++) {
+                MTDeviceRef deviceRef = (MTDeviceRef)CFArrayGetValueAtIndex(deviceList, i);
+                // Retain the device reference since we'll use it later
+                CFRetain(deviceRef);
+                OpenMTDeviceInfo *deviceInfo = [[OpenMTDeviceInfo alloc] initWithDeviceRef:deviceRef];
+                [devices addObject:deviceInfo];
+            }
+            CFRelease(deviceList);
+        }
+    }
+    
+    // Fallback to default device if no devices found
+    if (devices.count == 0 && MTDeviceIsAvailable()) {
+        MTDeviceRef defaultDevice = MTDeviceCreateDefault();
+        if (defaultDevice) {
+            OpenMTDeviceInfo *deviceInfo = [[OpenMTDeviceInfo alloc] initWithDeviceRef:defaultDevice];
+            [devices addObject:deviceInfo];
+            // Don't release defaultDevice here since we store the reference
+        }
+    }
+    
+    self.availableDeviceInfos = [devices copy];
+    if (devices.count > 0) {
+        self.currentDeviceInfo = devices[0];
+    }
+}
+
 - (void)makeDevice {
-    if (MTDeviceIsAvailable()) {
-        self.device = MTDeviceCreateDefault();
+    if (self.currentDeviceInfo && self.currentDeviceInfo.deviceRef) {
+        // Use the selected device
+        self.device = (MTDeviceRef)self.currentDeviceInfo.deviceRef;
         
         uuid_t guid;
         OSStatus err = MTDeviceGetGUID(self.device, &guid);
@@ -143,7 +216,37 @@
     });
 }
 
-// Public Function
+// Public Functions
+- (NSArray<OpenMTDeviceInfo *> *)availableDevices {
+    return self.availableDeviceInfos;
+}
+
+- (BOOL)selectDevice:(OpenMTDeviceInfo *)deviceInfo {
+    if (![self.availableDeviceInfos containsObject:deviceInfo]) {
+        return NO;
+    }
+    
+    // Stop current device if running
+    BOOL wasRunning = self.device && MTDeviceIsRunning(self.device);
+    if (wasRunning) {
+        [self stopHandlingMultitouchEvents];
+    }
+    
+    // Switch to new device
+    self.currentDeviceInfo = deviceInfo;
+    
+    // Restart if it was running
+    if (wasRunning) {
+        [self startHandlingMultitouchEvents];
+    }
+    
+    return YES;
+}
+
+- (OpenMTDeviceInfo *)currentDevice {
+    return self.currentDeviceInfo;
+}
+
 - (OpenMTListener *)addListenerWithTarget:(id)target selector:(SEL)selector {
     __block OpenMTListener *listener = nil;
     dispatchSync(dispatch_get_main_queue(), ^{
