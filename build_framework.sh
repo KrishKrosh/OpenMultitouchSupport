@@ -1,6 +1,15 @@
 #!/bin/sh -
 # xcodebuild -version
 
+echo "🧹 Clearing caches before building framework..."
+
+# Clear Xcode derived data for any OpenMultitouchSupport projects
+echo "Clearing Xcode derived data..."
+rm -rf ~/Library/Developer/Xcode/DerivedData/OMSDemo-*
+
+echo ""
+echo "🔨 Building framework..."
+
 xcodebuild build \
   -project "Framework/OpenMultitouchSupportXCF.xcodeproj" \
   -scheme "OpenMultitouchSupportXCF" \
