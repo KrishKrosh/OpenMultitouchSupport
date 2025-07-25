@@ -20,7 +20,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "OpenMultitouchSupportXCF",
-            path: "OpenMultitouchSupportXCF.xcframework.zip"
+            url: "https://github.com/KrishKrosh/OpenMultitouchSupport/releases/download/v1.0.0/OpenMultitouchSupportXCF.xcframework.zip",
+            checksum: "1c694ebd087a040ac786c75ea92b5302c76de1a8c9475b52bb5d022535305a19"
         ),
         .target(
             name: "OpenMultitouchSupport",
