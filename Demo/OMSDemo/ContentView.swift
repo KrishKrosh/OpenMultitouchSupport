@@ -36,17 +36,63 @@ struct ContentView: View {
                 .padding(.bottom)
             }
             
-            if viewModel.isListening {
-                Button {
-                    viewModel.stop()
-                } label: {
-                    Text("Stop")
+            HStack(spacing: 20) {
+                if viewModel.isListening {
+                    Button {
+                        viewModel.stop()
+                    } label: {
+                        Text("Stop")
+                    }
+                    .onHover { isHovering in
+                        if isHovering {
+                            viewModel.onButtonHover()
+                        } else {
+                            viewModel.onButtonExitHover()
+                        }
+                    }
+                } else {
+                    Button {
+                        viewModel.start()
+                    } label: {
+                        Text("Start")
+                    }
+                    .onHover { isHovering in
+                        if isHovering {
+                            viewModel.onButtonHover()
+                        } else {
+                            viewModel.onButtonExitHover()
+                        }
+                    }
                 }
-            } else {
-                Button {
-                    viewModel.start()
-                } label: {
-                    Text("Start")
+                
+                if viewModel.isHapticEnabled {
+                    Button {
+                        viewModel.stopHaptics()
+                    } label: {
+                        Text("Stop Haptics")
+                            .foregroundColor(.red)
+                    }
+                    .onHover { isHovering in
+                        if isHovering {
+                            viewModel.onButtonHover()
+                        } else {
+                            viewModel.onButtonExitHover()
+                        }
+                    }
+                } else {
+                    Button {
+                        viewModel.startHaptics()
+                    } label: {
+                        Text("Start Haptics")
+                            .foregroundColor(.green)
+                    }
+                    .onHover { isHovering in
+                        if isHovering {
+                            viewModel.onButtonHover()
+                        } else {
+                            viewModel.onButtonExitHover()
+                        }
+                    }
                 }
             }
             Canvas { context, size in
@@ -65,6 +111,15 @@ struct ContentView: View {
         }
         .onDisappear {
             viewModel.onDisappear()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willResignActiveNotification)) { _ in
+            viewModel.ensureHapticsSafe()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willHideNotification)) { _ in
+            viewModel.ensureHapticsSafe()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+            viewModel.ensureHapticsSafe()
         }
     }
 

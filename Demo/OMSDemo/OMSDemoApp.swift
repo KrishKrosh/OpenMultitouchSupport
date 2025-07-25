@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import OpenMultitouchSupport
 
 @main
 struct OMSDemoApp: App {
@@ -21,4 +22,14 @@ struct OMSDemoApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    
+    func applicationWillTerminate(_ aNotification: Notification) {
+        // CRITICAL: Ensure haptics are restored before app termination
+        // This prevents the trackpad from being "bricked" if haptics were disabled
+        let manager = OMSManager.shared
+        if !manager.isHapticEnabled {
+            print("⚠️ Restoring haptics before app termination to prevent trackpad issues")
+            manager.setHapticEnabled(true)
+        }
+    }
 }

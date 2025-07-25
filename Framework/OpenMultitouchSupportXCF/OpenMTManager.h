@@ -31,6 +31,9 @@
 - (OpenMTListener *)addListenerWithTarget:(id)target selector:(SEL)selector;
 - (void)removeListener:(OpenMTListener *)listener;
 
+- (BOOL)isHapticEnabled;
+- (BOOL)setHapticEnabled:(BOOL)enabled;
+
 @end
 
 #endif /* OpenMTManager_h */

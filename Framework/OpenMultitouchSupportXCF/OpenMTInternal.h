@@ -91,6 +91,12 @@ void MTUnregisterFullFrameCallback(MTDeviceRef, MTFrameCallbackFunction);
 void MTRegisterPathCallback(MTDeviceRef, MTPathCallbackFunction);
 void MTUnregisterPathCallback(MTDeviceRef, MTPathCallbackFunction);
 
+// Haptic control functions
+typedef void *MTActuatorRef;
+MTActuatorRef MTDeviceGetMTActuator(MTDeviceRef device);
+bool MTActuatorGetSystemActuationsEnabled(MTActuatorRef actuator);
+OSStatus MTActuatorSetSystemActuationsEnabled(MTActuatorRef actuator, bool enabled);
+
 #ifdef __cplusplus
 }
 #endif

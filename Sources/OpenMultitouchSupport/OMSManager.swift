@@ -91,6 +91,17 @@ public final class OMSManager: Sendable {
         guard let xcfManager = protectedManager.withLockUnchecked(\.self) else { return false }
         return xcfManager.selectDevice(device.deviceInfo)
     }
+    
+    public var isHapticEnabled: Bool {
+        guard let xcfManager = protectedManager.withLockUnchecked(\.self) else { return false }
+        return xcfManager.isHapticEnabled()
+    }
+    
+    @discardableResult
+    public func setHapticEnabled(_ enabled: Bool) -> Bool {
+        guard let xcfManager = protectedManager.withLockUnchecked(\.self) else { return false }
+        return xcfManager.setHapticEnabled(enabled)
+    }
 
     @objc func listen(_ event: OpenMTEvent) {
         guard let touches = (event.touches as NSArray) as? [OpenMTTouch] else { return }
