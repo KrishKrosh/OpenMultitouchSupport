@@ -12,11 +12,15 @@ import SwiftUI
 final class ContentViewModel: ObservableObject {
     @Published var touchData = [OMSTouchData]()
     @Published var isListening: Bool = false
+    @Published var availableDevices = [OMSDeviceInfo]()
+    @Published var selectedDevice: OMSDeviceInfo?
 
     private let manager = OMSManager.shared
     private var task: Task<Void, Never>?
 
-    init() {}
+    init() {
+        loadDevices()
+    }
 
     func onAppear() {
         task = Task { [weak self, manager] in
@@ -42,6 +46,17 @@ final class ContentViewModel: ObservableObject {
     func stop() {
         if manager.stopListening() {
             isListening = false
+        }
+    }
+    
+    func loadDevices() {
+        availableDevices = manager.availableDevices
+        selectedDevice = manager.currentDevice
+    }
+    
+    func selectDevice(_ device: OMSDeviceInfo) {
+        if manager.selectDevice(device) {
+            selectedDevice = device
         }
     }
 }
