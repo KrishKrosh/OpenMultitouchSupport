@@ -20,9 +20,11 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "OpenMultitouchSupportXCF",
+            // For development: use local framework
             // path: "OpenMultitouchSupportXCF.xcframework"
-            url: "https://github.com/KrishKrosh/OpenMultitouchSupport/releases/download/v1.0.8/OpenMultitouchSupportXCF.xcframework.zip",
-            checksum: "e3ebaf1248c46dc735cdd32876e93d097b5b645523339109adec75e148124262"
+            // For release: use GitHub URL (replaced by release script)
+            url: "https://github.com/KrishKrosh/OpenMultitouchSupport/releases/download/v1.0.10/OpenMultitouchSupportXCF.xcframework.zip",
+            checksum: "65d4a5b64e9c49b0482f3f42e495606cfa7649c0eb2d837373097bc70324e29d"
         ),
         .target(
             name: "OpenMultitouchSupport",
@@ -30,4 +32,4 @@ let package = Package(
             swiftSettings: swiftSettings
         )
     ]
-)
+) 
