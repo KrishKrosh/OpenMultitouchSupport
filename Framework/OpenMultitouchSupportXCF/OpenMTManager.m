@@ -7,6 +7,7 @@
 //
 
 #import <Cocoa/Cocoa.h>
+#import <IOKit/IOKitLib.h>
 
 #import "OpenMTManagerInternal.h"
 #import "OpenMTListenerInternal.h"
@@ -377,6 +378,153 @@
     return result == noErr;
 }
 
+- (BOOL)triggerHapticFeedback:(SInt32)actuationID {
+    return [self triggerHapticWithIntensity:actuationID intensity:1.0];
+}
+
+- (BOOL)triggerHapticWithIntensity:(SInt32)actuationID intensity:(Float32)intensity {
+    NSLog(@"🔧 HapticKey-style haptic trigger with ID: %d, intensity: %f", actuationID, intensity);
+    
+    // Find the built-in trackpad device using IOKit (HapticKey approach)
+    UInt64 multitouchDeviceID = [self findBuiltInTrackpadDeviceID];
+    if (multitouchDeviceID == 0) {
+        NSLog(@"❌ Failed to find built-in trackpad device");
+        return NO;
+    }
+    NSLog(@"✅ Found trackpad device ID: 0x%llx", multitouchDeviceID);
+    
+    // Create actuator from device ID (HapticKey approach)
+    CFTypeRef actuatorRef = MTActuatorCreateFromDeviceID(multitouchDeviceID);
+    if (!actuatorRef) {
+        NSLog(@"❌ Failed to create MTActuator from device ID");
+        return NO;
+    }
+    NSLog(@"✅ Created MTActuator: %p", actuatorRef);
+    
+    // Open the actuator (HapticKey approach)
+    IOReturn openResult = MTActuatorOpen(actuatorRef);
+    if (openResult != kIOReturnSuccess) {
+        NSLog(@"❌ Failed to open MTActuator: 0x%x", openResult);
+        CFRelease(actuatorRef);
+        return NO;
+    }
+    NSLog(@"✅ Opened MTActuator successfully");
+    
+    // Actuate with press phase (HapticKey approach: unknown3=2.0)
+    NSLog(@"🎯 Actuating press phase (ID: %d, unknown3: 2.0)", actuationID);
+    IOReturn pressResult = MTActuatorActuate(actuatorRef, actuationID, 0, 0.0, 2.0);
+    NSLog(@"🎯 Press result: 0x%x (0 = success)", pressResult);
+    
+    // Small delay between press and release
+    usleep(50000); // 50ms delay
+    
+    // Actuate with release phase (HapticKey approach: unknown3=0.0)
+    NSLog(@"🎯 Actuating release phase (ID: %d, unknown3: 0.0)", actuationID);
+    IOReturn releaseResult = MTActuatorActuate(actuatorRef, actuationID, 0, 0.0, 0.0);
+    NSLog(@"🎯 Release result: 0x%x (0 = success)", releaseResult);
+    
+    // Close the actuator
+    IOReturn closeResult = MTActuatorClose(actuatorRef);
+    if (closeResult != kIOReturnSuccess) {
+        NSLog(@"⚠️ Failed to close MTActuator: 0x%x", closeResult);
+    }
+    
+    // Release the actuator
+    CFRelease(actuatorRef);
+    
+    BOOL success = (pressResult == kIOReturnSuccess) && (releaseResult == kIOReturnSuccess);
+    NSLog(@"🎯 Final haptic result: %s", success ? "SUCCESS" : "FAILED");
+    return success;
+}
+
+- (UInt64)findBuiltInTrackpadDeviceID {
+    // Use IOKit to find the built-in trackpad (HapticKey approach)
+    io_iterator_t iterator = IO_OBJECT_NULL;
+    const CFMutableDictionaryRef matchingRef = IOServiceMatching("AppleMultitouchDevice");
+    const kern_return_t result = IOServiceGetMatchingServices(kIOMainPortDefault, matchingRef, &iterator);
+    
+    if (result != KERN_SUCCESS) {
+        NSLog(@"❌ Failed to get matching services: 0x%x", result);
+        return 0;
+    }
+    
+    UInt64 foundDeviceID = 0;
+    io_service_t service = IO_OBJECT_NULL;
+    
+    while ((service = IOIteratorNext(iterator)) != IO_OBJECT_NULL) {
+        CFMutableDictionaryRef propertiesRef = NULL;
+        const kern_return_t propResult = IORegistryEntryCreateCFProperties(service, &propertiesRef, CFAllocatorGetDefault(), 0);
+        
+        if (propResult != KERN_SUCCESS) {
+            IOObjectRelease(service);
+            continue;
+        }
+        
+        NSDictionary *properties = (__bridge_transfer NSDictionary *)propertiesRef;
+        NSLog(@"🔍 Found multitouch device: %@", properties[@"Product"]);
+        
+        // Look for actuation-supported, built-in device (trackpad)
+        NSNumber *actuationSupported = properties[@"ActuationSupported"];
+        NSNumber *mtBuiltIn = properties[@"MT Built-In"];
+        
+        if (actuationSupported.boolValue && mtBuiltIn.boolValue) {
+            NSNumber *multitouchID = properties[@"Multitouch ID"];
+            foundDeviceID = multitouchID.unsignedLongLongValue;
+            NSLog(@"✅ Found built-in trackpad: %@ (ID: 0x%llx)", properties[@"Product"], foundDeviceID);
+            IOObjectRelease(service);
+            break;
+        } else {
+            NSLog(@"⏭️ Skipping device %@ (ActuationSupported: %@, Built-In: %@)", 
+                  properties[@"Product"], actuationSupported, mtBuiltIn);
+        }
+        
+        IOObjectRelease(service);
+    }
+    
+    IOObjectRelease(iterator);
+    return foundDeviceID;
+}
+// actuation IDs range from 1-6 going weakest to strongest
+// unknown 2 controls the sharpness. Test: activation id 1 with unknown2=10
+// unknown 3 is used as onset/offset in other cases. onset=0 offset=2. Can be negative
+- (BOOL)triggerRawHaptic:(SInt32)actuationID unknown1:(UInt32)unknown1 unknown2:(Float32)unknown2 unknown3:(Float32)unknown3 {
+    NSLog(@"🔧 Raw haptic trigger - ID: %d, unknown1: %u, unknown2: %f, unknown3: %f", actuationID, unknown1, unknown2, unknown3);
+    
+    // Find the built-in trackpad device using IOKit (HapticKey approach)
+    UInt64 multitouchDeviceID = [self findBuiltInTrackpadDeviceID];
+    if (multitouchDeviceID == 0) {
+        NSLog(@"❌ Failed to find built-in trackpad device");
+        return NO;
+    }
+    
+    // Create actuator from device ID (HapticKey approach)
+    CFTypeRef actuatorRef = MTActuatorCreateFromDeviceID(multitouchDeviceID);
+    if (!actuatorRef) {
+        NSLog(@"❌ Failed to create MTActuator from device ID");
+        return NO;
+    }
+    
+    // Open the actuator (HapticKey approach)
+    IOReturn openResult = MTActuatorOpen(actuatorRef);
+    if (openResult != kIOReturnSuccess) {
+        NSLog(@"❌ Failed to open MTActuator: 0x%x", openResult);
+        CFRelease(actuatorRef);
+        return NO;
+    }
+    
+    // Single actuate call with raw parameters
+    NSLog(@"🎯 Actuating with raw parameters");
+    IOReturn result = MTActuatorActuate(actuatorRef, actuationID, unknown1, unknown2, unknown3);
+    NSLog(@"🎯 Actuate result: 0x%x (0 = success)", result);
+    
+    // Close and release
+    MTActuatorClose(actuatorRef);
+    CFRelease(actuatorRef);
+    
+    BOOL success = (result == kIOReturnSuccess);
+    NSLog(@"🎯 Raw haptic result: %s", success ? "SUCCESS" : "FAILED");
+    return success;
+}
 // Utility Tools C Language
 static void dispatchSync(dispatch_queue_t queue, dispatch_block_t block) {
     if (!strcmp(dispatch_queue_get_label(queue), dispatch_queue_get_label(DISPATCH_CURRENT_QUEUE_LABEL))) {

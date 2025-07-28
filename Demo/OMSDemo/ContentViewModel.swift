@@ -139,4 +139,48 @@ final class ContentViewModel: ObservableObject {
             updateHapticStatus()
         }
     }
+    
+    // MARK: - Haptic Testing Functions
+    
+    private var lastHapticTime: Date = Date.distantPast
+    private let hapticDebounceInterval: TimeInterval = 0.010 // 10 seconds debounce
+    
+    // MARK: - Raw Haptic Testing Properties
+    @Published var customActuationID: String = "6"
+    @Published var customUnknown1: String = "0"
+    @Published var customUnknown2: String = "1.0"
+    @Published var customUnknown3: String = "2.0"
+    
+    private func shouldTriggerHaptic() -> Bool {
+        let now = Date()
+        guard now.timeIntervalSince(lastHapticTime) >= hapticDebounceInterval else {
+            print("🚫 Haptic debounced - too soon since last trigger")
+            return false
+        }
+        lastHapticTime = now
+        return true
+    }
+    
+    func triggerRawHaptic() {
+        guard shouldTriggerHaptic() else { return }
+        
+        guard let actuationID = Int32(customActuationID),
+              let unknown1 = UInt32(customUnknown1),
+              let unknown2 = Float(customUnknown2),
+              let unknown3 = Float(customUnknown3) else {
+            print("❌ Invalid haptic parameters")
+            return
+        }
+        
+        print("🎯 Raw Haptic - ID: \(actuationID), Unknown1: \(unknown1), Unknown2: \(unknown2), Unknown3: \(unknown3)")
+        
+        let result = manager.triggerRawHaptic(
+            actuationID: actuationID,
+            unknown1: unknown1,
+            unknown2: unknown2,
+            unknown3: unknown3
+        )
+        
+        print("🎯 Raw haptic result: \(result)")
+    }
 }

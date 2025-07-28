@@ -22,6 +22,18 @@ public struct OMSDeviceInfo: Sendable, Hashable {
     }
 }
 
+public enum OMSHapticIntensity: Int32, CaseIterable, Sendable {
+    case weak = 3
+    case medium = 4
+    case strong = 6
+}
+
+public enum OMSHapticPattern: Int32, CaseIterable, Sendable {
+    case generic = 15
+    case alignment = 16
+    case level = 5  // Changed from 17 to 5 (valid ID)
+}
+
 public final class OMSManager: Sendable {
     public static let shared = OMSManager()
 
@@ -101,6 +113,12 @@ public final class OMSManager: Sendable {
     public func setHapticEnabled(_ enabled: Bool) -> Bool {
         guard let xcfManager = protectedManager.withLockUnchecked(\.self) else { return false }
         return xcfManager.setHapticEnabled(enabled)
+    }
+    
+    @discardableResult
+    public func triggerRawHaptic(actuationID: Int32, unknown1: UInt32, unknown2: Float, unknown3: Float) -> Bool {
+        guard let xcfManager = protectedManager.withLockUnchecked(\.self) else { return false }
+        return xcfManager.triggerRawHaptic(actuationID, unknown1: unknown1, unknown2: unknown2, unknown3: unknown3)
     }
 
     @objc func listen(_ event: OpenMTEvent) {

@@ -95,6 +95,63 @@ struct ContentView: View {
                     }
                 }
             }
+            
+            // Raw Haptic Testing Section
+            if viewModel.isHapticEnabled {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Raw Haptic Testing:")
+                        .font(.headline)
+                    
+                    Text("Known Working IDs: 1, 2, 3, 4, 5, 6, 15, 16")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Actuation ID:")
+                                .font(.caption)
+                            TextField("ID", text: $viewModel.customActuationID)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 80)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Unknown1 (UInt32):")
+                                .font(.caption)
+                            TextField("0", text: $viewModel.customUnknown1)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 80)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Unknown2 (Float):")
+                                .font(.caption)
+                            TextField("1.0", text: $viewModel.customUnknown2)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 80)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Unknown3 (Float):")
+                                .font(.caption)
+                            TextField("2.0", text: $viewModel.customUnknown3)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 80)
+                        }
+                        
+                        Button("Trigger") {
+                            viewModel.triggerRawHaptic()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .keyboardShortcut(.return, modifiers: [])
+                    }
+                    .onSubmit {
+                        viewModel.triggerRawHaptic()
+                    }
+                }
+                .padding(.bottom)
+            }
+            
             Canvas { context, size in
                 viewModel.touchData.forEach { touch in
                     let path = makeEllipse(touch: touch, size: size)
