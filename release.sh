@@ -290,11 +290,22 @@ main() {
     # Update repository with release Package.swift
     update_repository
     
-    # Optional: Revert to development version
+    # Optional: Revert to development version (NOT RECOMMENDED for SPM)
+    log_warning "IMPORTANT: For Swift Package Manager to work, keep the release version in GitHub!"
+    log_warning "Only revert if you understand this breaks SPM for other developers."
     echo -n "Do you want to revert Package.swift to development version? (y/N): "
     read revert_choice
     if [[ $revert_choice =~ ^[Yy]$ ]]; then
-        revert_to_development
+        log_warning "This will break Swift Package Manager for other developers!"
+        echo -n "Are you sure? (y/N): "
+        read confirm_choice
+        if [[ $confirm_choice =~ ^[Yy]$ ]]; then
+            revert_to_development
+        else
+            log_info "Keeping release version (recommended)"
+        fi
+    else
+        log_success "Keeping release version (recommended for SPM)"
     fi
     
     echo ""
