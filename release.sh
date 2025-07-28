@@ -126,13 +126,8 @@ update_package_swift() {
     log_info "Checksum: $checksum"
     
     # Check if template exists, otherwise use current Package.swift
-    if [ -f "Package.swift.template" ]; then
-        log_info "Using Package.swift.template"
-        source_file="Package.swift.template"
-    else
-        log_warning "Package.swift.template not found, using current Package.swift"
-        source_file="Package.swift"
-    fi
+    log_info "Using Package.swift.template"
+    source_file="Package.swift.template"
     
     # Create a temporary Package.swift for release
     sed -e "s|YOUR_USERNAME|${GITHUB_USERNAME}|g" \
