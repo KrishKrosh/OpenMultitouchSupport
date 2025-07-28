@@ -125,12 +125,21 @@ update_package_swift() {
     log_info "URL: $url"
     log_info "Checksum: $checksum"
     
+    # Check if template exists, otherwise use current Package.swift
+    if [ -f "Package.swift.template" ]; then
+        log_info "Using Package.swift.template"
+        source_file="Package.swift.template"
+    else
+        log_warning "Package.swift.template not found, using current Package.swift"
+        source_file="Package.swift"
+    fi
+    
     # Create a temporary Package.swift for release
     sed -e "s|YOUR_USERNAME|${GITHUB_USERNAME}|g" \
         -e "s|YOUR_REPO_NAME|${REPO_NAME}|g" \
         -e "s|VERSION|${RELEASE_VERSION}|g" \
         -e "s|CHECKSUM_PLACEHOLDER|${checksum}|g" \
-        Package.swift > Package.swift.release
+        "$source_file" > Package.swift.release
     
     log_success "Package.swift updated for release"
 }
@@ -199,6 +208,70 @@ revert_to_development() {
     log_success "Reverted to development version"
 }
 
+# Test function to verify update_package_swift works
+test_update_package_swift() {
+    log_info "Testing update_package_swift function..."
+    
+    # Set test values
+    GITHUB_USERNAME="krishkrosh"
+    REPO_NAME="OpenMultitouchSupport"
+    RELEASE_VERSION="v1.0.9-test"
+    
+    # Create a dummy zip file for checksum calculation
+    echo "dummy content for testing" > dummy.zip
+    
+    # Override checksum calculation for testing
+    local checksum="abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+    local url="https://github.com/${GITHUB_USERNAME}/${REPO_NAME}/releases/download/${RELEASE_VERSION}/OpenMultitouchSupportXCF.xcframework.zip"
+    
+    log_info "Test parameters:"
+    log_info "URL: $url"
+    log_info "Checksum: $checksum"
+    
+    # Check if template exists, otherwise use current Package.swift
+    if [ -f "Package.swift.template" ]; then
+        log_info "Using Package.swift.template"
+        source_file="Package.swift.template"
+    else
+        log_warning "Package.swift.template not found, using current Package.swift"
+        source_file="Package.swift"
+    fi
+    
+    # Create a test Package.swift
+    sed -e "s|YOUR_USERNAME|${GITHUB_USERNAME}|g" \
+        -e "s|YOUR_REPO_NAME|${REPO_NAME}|g" \
+        -e "s|VERSION|${RELEASE_VERSION}|g" \
+        -e "s|CHECKSUM_PLACEHOLDER|${checksum}|g" \
+        "$source_file" > Package.swift.test
+    
+    log_success "Test Package.swift created as Package.swift.test"
+    echo ""
+    echo "Generated content:"
+    echo "=================="
+    cat Package.swift.test
+    echo "=================="
+    echo ""
+    
+    # Verify the replacements worked
+    if grep -q "YOUR_USERNAME\|YOUR_REPO_NAME\|VERSION\|CHECKSUM_PLACEHOLDER" Package.swift.test; then
+        log_error "Some placeholders were not replaced!"
+        grep "YOUR_USERNAME\|YOUR_REPO_NAME\|VERSION\|CHECKSUM_PLACEHOLDER" Package.swift.test
+    else
+        log_success "All placeholders were successfully replaced!"
+    fi
+    
+    # Cleanup
+    rm -f dummy.zip
+    echo -n "Remove test file Package.swift.test? (y/N): "
+    read cleanup_choice
+    if [[ $cleanup_choice =~ ^[Yy]$ ]]; then
+        rm Package.swift.test
+        log_info "Test file removed"
+    else
+        log_info "Test file kept as Package.swift.test"
+    fi
+}
+
 # Main execution
 main() {
     echo "🚀 GitHub Release Script for OpenMultitouchSupport"
@@ -239,5 +312,10 @@ main() {
     echo "   https://github.com/${GITHUB_USERNAME}/${REPO_NAME}/releases/tag/${RELEASE_VERSION}"
 }
 
-# Run main function with all arguments
-main "$@"
+# Check for test flag
+if [[ "$1" == "--test" || "$1" == "test" ]]; then
+    test_update_package_swift
+else
+    # Run main function with all arguments
+    main "$@"
+fi
