@@ -106,7 +106,7 @@ build_framework() {
     log_info "Building XCFramework..."
     
     # Clear caches and build
-    ./build_framework.sh
+    ./build_framework.sh --release
     
     if [ ! -f "OpenMultitouchSupportXCF.xcframework.zip" ]; then
         log_error "XCFramework build failed - zip file not found"
